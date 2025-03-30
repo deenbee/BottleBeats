@@ -1,8 +1,6 @@
-from email.policy import default
-from tkinter import NO
-from turtle import color
 import pygame
 #import #wiringpi
+import json
 import os
 from multiprocessing import parent_process
 import numpy as np
@@ -10,11 +8,23 @@ import sounddevice as sd
 import soundfile as sf
 from scipy.signal import fftconvolve
 from collections import deque
+from src.audio import load_audio_settings, load_audio_buffer
+
+
+class Colores:
+    g = (150, 150, 150)
+    r = (255, 0, 0) 
+    w = (255, 255, 255)
+    bg = (0, 0, 0)
+    gn = (0, 0, 0)
+
+Color = Colores()   
+
 
 class Ver_info:
 
     def __init__(self):
-        self.ver_ = "0.2.3 Beta"
+        self.ver_ = "0.2.4 Beta"
         self.last_update = "28 Mar 2025"
         self.author = "Danubio Rodriguez"
         self.color = (255, 255, 255)
@@ -167,15 +177,8 @@ class Samples_banks:
 Samples = Samples_banks()
 
 
-    
+ 
 
-
-class Color:
-    g = (150, 150, 150)
-    r = (255, 0, 0) 
-    w = (255, 255, 255)
-    bg = (0, 0, 0)
-    gn = (0, 0, 0)
 
 class Main_patterns:
 
@@ -498,15 +501,16 @@ class Sonido:
         self.bank = 0
         self.load_samples_banks(self.bank) # Carga los bancos de sonidos
 
-        
+        self.default_device = load_audio_settings()
+                
         # Configurar dispositivo de audio
         self.devices = sd.query_devices()  # Guardar lista de dispositivos
-        sd.default.device = [None, None]  # [entrada, salida], solo salida en 19
+        sd.default.device = [None, self.default_device]  # [entrada, salida], solo salida en 19
         sd.default.latency = 'low'
         sd.default.samplerate = 44100
-        self.blocksize = 512  # Valor inicial del buffer
+        self.blocksize = load_audio_buffer()  # Valor inicial del buffer
 
-        self.default_device = sd.default.device
+        
         print("Dispositivo de audio seleccionado por default ", sd.default.device)
 
         # Intentar iniciar el stream (aquí manejamos errores de la tarjeta)
@@ -530,30 +534,60 @@ class Sonido:
             Pestania.confirm_close = False
             self.stream = None  # Marcar que no hay stream activo
 
-    def update_audio_device(self, device_idx, blocksize):
-        if hasattr(self, 'stream') and self.stream is not None:
-            self.stream.stop()
-            self.stream.close()
-
-        sd.default.device = [None, device_idx]  # Forzar [entrada=None, salida=device_idx]
-        self.blocksize = blocksize
-        self.default_device = sd.default.device
-
+    def update_audio_device(self, buffer):
+        
         try:
             self.stream = sd.OutputStream(
                 samplerate=44100,
                 channels=2,
                 callback=self.callback,
-                blocksize=self.blocksize,
+                blocksize = buffer,
                 latency='low'
             )
             self.stream.start()
-            print(f"Stream actualizado: Device {device_idx}, Blocksize {blocksize}")
+            print(f"Stream actualizado:  Blocksize {buffer}")
             return True
         except Exception as e:
             print(f"Error actualizando tarjeta de sonido: {e}")
             self.stream = None
             return False
+
+    def change_audio_buffer(self, option):
+        if hasattr(self, 'stream') and self.stream is not None:
+            self.stream.stop()
+            self.stream.close()
+
+        if option == 1:
+            if self.blocksize <= 1024 - 128:
+                self.blocksize += 128
+               
+        else:
+            if self.blocksize > 128:
+                self.blocksize -= 128
+        
+                    
+        sd.default.blocksize = self.blocksize
+        self.update_audio_device(self.blocksize)
+                    
+
+    def change_audio_driver(self, option):
+        num_dvs = len(self.devices) # Obtenemos el numero maximo de dispositivos de audio
+        
+        if hasattr(self, 'stream') and self.stream is not None:
+            self.stream.stop()
+            self.stream.close()
+     
+        if option == 1:
+            if self.default_device < num_dvs - 1:
+                self.default_device += 1
+                sd.default.device = [None, self.default_device]
+        else:
+            if self.default_device > 0:
+                self.default_device -= 1
+                sd.default.device = [None, self.default_device]
+
+        print("Numero de dispositivo de salida es ", self.default_device, " de ", num_dvs)
+        self.update_audio_device(self.blocksize)    
     
     
     def load_samples_banks(self, b_selected):
@@ -593,21 +627,7 @@ class Sonido:
             except Exception as e:
                 print(f"Error cargando {Samples.wav_files[i]}: {e}")
         
-        """
-        for i in range(largo):
-            try:
-                self.audio[i], self.samplerate[i] = sf.read(samples_files[i])
-
-                if len(self.audio[i].shape) > 1 and self.audio[i].shape[1] == 2:
-                    self.audio[i] = self.audio[i].mean(axis=1)
-                    self.audio_pitch[i] = self.cambiar_tono(self.audio[i], self.factor_tono[i])
-                    self.audio_pitch[i] *= self.volumenes[i]
-                    left_gain = np.clip(1.0 - self.pan[i], 0, 1)
-                    right_gain = np.clip(1.0 + self.pan[i], 0, 1)
-                    self.audio_stereo[i] = np.column_stack((self.audio_pitch[i] * left_gain, self.audio_pitch[i] * right_gain))
-            except Exception as e:
-                    print(f"Error cargando {Samples.wav_files[i]}: {e}")"""
-
+    
 
     def callback(self, outdata, frames, time, status):
         if status:
@@ -635,11 +655,7 @@ class Sonido:
         print("Reproducción detenida.")
 
 
-    """
-    def cambiar_tono(self, data, factor):
-        indices = np.arange(0, len(data), 1 / factor)
-        indices = np.clip(indices, 0, len(data) - 1)
-        return np.interp(indices, np.arange(len(data)), data)"""
+   
     
     def cambiar_tono(self, data, factor):
         indices = np.arange(0, len(data), 1 / factor)
@@ -651,24 +667,7 @@ class Sonido:
         else:  # Si es mono
             return np.interp(indices, np.arange(len(data)), data)
 
-    """
-    def ply(self, channel_index, tono=1.0, vol=1.0, pan=0.0):
-        
-        #Reproduce un sonido con tono, volumen y paneo ajustables en tiempo real.
-        #pan: -1.0 (izquierda), 0.0 (centro), 1.0 (derecha)
-        
-        if self.audio[channel_index] is not None:
-            # Aplicar tono en tiempo real
-            audio_tono = self.cambiar_tono(self.audio[channel_index], tono)
-            audio_tono *= vol
-            # Calcular ganancias para paneo con un solo parámetro
-            left_gain = np.clip(1.0 - pan, 0, 1)  # 1.0 en pan=-1.0, 0.0 en pan=1.0
-            right_gain = np.clip(1.0 + pan, 0, 1)  # 0.0 en pan=-1.0, 1.0 en pan=1.0
-            audio_stereo = np.column_stack((audio_tono * left_gain, audio_tono * right_gain))
-            self.active_sounds.append((audio_stereo, self.samplerate[channel_index], 0))
-            print(f"Sonido del canal {channel_index} disparado con tono {tono} y paneo {pan}.")
-        else:
-            print(f"Error: No hay audio en el canal {channel_index}.")"""
+    
     
     def ply(self, channel_index, tono=1.0, vol=1.0, pan=0.0):
         if self.audio[channel_index] is not None:
@@ -1108,6 +1107,8 @@ VOL_HEIGHT = 20
 PAN_WIDTH = 60  # Definimos ancho para el paneo
 PAN_HEIGHT = 20
 DRAW_X = 150  # Posición inicial x de steps
+
+
 
 # Botones y cuadros
 
