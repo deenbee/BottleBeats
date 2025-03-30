@@ -1,10 +1,11 @@
 import pygame
 #import wiringpi
 import os
-from config.variables import Pestania, Seq, Color, screen
+from config.variables import Pestania, Color, Sound, screen
 from src.jsncodes import load_settings, save_settings
 from src.handle import update_sequencer, handle_input, Botones
 from src.draw_ui import draw_ui, draw_steps
+from src.audio import save_audio
 
 
 
@@ -78,4 +79,5 @@ while running:
 
 
 save_settings()
+save_audio(Sound.default_device, Sound.blocksize)
 pygame.quit()
