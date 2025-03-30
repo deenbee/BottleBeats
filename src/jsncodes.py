@@ -1,18 +1,13 @@
 import json
-import pygame
-from config.variables import Color, Seq, Samples, Patt, Sound
-import sounddevice
+from config.variables import Seq, Patt, Sound, Samples, Color
 
 
 def load_settings():
-    m_file = f"settings.json"
+    
+    m_file = f"config/settings.json"
     try:
         with open(m_file, "r") as f:
             settings_data = json.load(f)
-            #device = settings_data["default_device"]
-            # Si device es una lista, no necesitamos convertirla a _InputOutputPair
-            # porque Sound.update_audio_device() parece aceptarla directamente
-            #buffer = settings_data["default_buffer"]
             Color.g = settings_data["Color.g"]
             Color.r = settings_data["Color.r"]
             Color.w = settings_data["Color.w"]
@@ -30,22 +25,16 @@ def load_settings():
         Color.bg = (0, 0, 0)
     except Exception as e:
         print(f"Error load settings file: {e}")
-        #device = None
-        #buffer = 256
         Color.g = (150, 150, 150)
         Color.r = (255, 0, 0)
         Color.w = (255, 255, 255)
         Color.gn = (0, 255, 0)
         Color.bg = (0, 0, 0)
 
-    #Sound.update_audio_device(device, buffer)
-
+    
 
 def save_settings():
-    # Convertir Sound.default_device a una lista si es _InputOutputPair
-    #device_data = Sound.default_device
-    #if isinstance(device_data, sounddevice._InputOutputPair):
-    #    device_data = list(device_data)
+   
     settings_data = {
         #"default_device": device_data,
         #"default_buffer": Sound.blocksize,
@@ -53,13 +42,17 @@ def save_settings():
         "Color.r": Color.r,
         "Color.w": Color.w,
         "Color.gn": Color.gn,
-        "Color.bg": Color.bg
+        "Color.bg": Color.bg,
     }
-    m_file = f"settings.json"
+    m_file = f"config/settings.json"
     with open(m_file, "w") as f:
         json.dump(settings_data, f)
     print("Settings saved")
-    
+
+
+
+     
+
 def save_preset():
     preset_data = {
         "Patt.mtx_p": Patt.mtx_p,
@@ -79,7 +72,6 @@ def save_preset():
         "Color.w": Color.w,
         "Color.gn": Color.gn,
         "Color.bg": Color.bg,
-        "select_bank": Sound.bank,
     }
     # Imprime los datos para encontrar el problema
     for clave, valor in preset_data.items():
@@ -89,7 +81,7 @@ def save_preset():
         json.dump(preset_data, f)
     print(f"Preset guardado en memoria {Seq.s_mem} ({memory_file})")
     
-def load_preset():
+def load_preset(Color=0):
     
     memory_file = f"presets/memory_{Seq.s_mem}.json"
     try:
@@ -114,13 +106,14 @@ def load_preset():
             select_bank = preset_data["select_bank"]
             Sound.load_samples_banks(select_bank)
             Seq.tpo_txt = str(Seq.tempo)
-                
-            
 
+                        
             print(f"Preset cargado desde memoria {Seq.s_mem} ({memory_file})")
     except FileNotFoundError:
             print(f"No se encontró un preset en la memoria {Seq.s_mem}. Se creará uno al guardar.")
     except Exception as e:
             print(f"Error al cargar el preset desde memoria {Seq.s_mem}: {e}")
+
+
 
     

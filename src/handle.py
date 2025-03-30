@@ -2,17 +2,20 @@ from tkinter import SE
 import pygame
 import test
 #import #wiringpi
+import sounddevice as sd
 from config.variables import TON_HEIGHT, TON_WIDTH, Botones, Samples, Sound
 from config.variables import Pestania, Color, Patt, Seq, MENU_BUTTON, MENU_ITEMS, MENU_ITEM_HEIGHT, MENU_WIDTH, DRAW_X, STEP_WIDTH, STEP_MARGIN, STEP_HEIGHT, CHANNEL_HEIGHT, VOL_HEIGHT, VOL_WIDTH, PAN_WIDTH, PAN_HEIGHT, COLOR_BTN1, COLOR_BTN2, COLOR_BTN3, COLOR_BTN4, COLOR_BTN5, COLOR_BTN6, SAVE_BUTTON, LOAD_BUTTON, PLAY_BUTTON, BNK_BUTTON, PATTERN_TOTAL, SETTING_BOX, TEMPO_BOX, MASTER_VOL_BOX, LED_DURATION, led_pins
 from .jsncodes import save_preset
 from .jsncodes import load_preset
 
 
-from multiprocessing import parent_process
-import numpy as np
-import sounddevice as sd
-import soundfile as sf
-from scipy.signal import fftconvolve
+SC_H = 180 # Altura de los botones de la configuracion de sonido
+SC1 = pygame.Rect(60, SC_H, 20, 20)
+SC2 = pygame.Rect(90, SC_H, 20, 20)
+
+SC_BUF_H = 280
+SC_BUFF1 = pygame.Rect(60, SC_BUF_H, 20, 20)
+SC_BUFF2 = pygame.Rect(90, SC_BUF_H, 20, 20)
 
 device_rects = {}
 buffer_rects = {}
@@ -105,6 +108,21 @@ def handle_input(pos):
     
     # Manejo de clics en la pestaña de configuración
     if Pestania.settings == True and Seq.playing == False:
+        
+        if SC1.collidepoint(pos):
+            print("Cambio audio -")
+            Sound.change_audio_driver(0) # 0 para restar
+        if SC2.collidepoint(pos):  
+            print("Cambio audio +")
+            Sound.change_audio_driver(1) # 1 para sumar
+
+        if SC_BUFF1.collidepoint(pos):
+            Sound.change_audio_buffer(0) # 0 para restar
+
+        if SC_BUFF2.collidepoint(pos):        
+            Sound.change_audio_buffer(1) # 1 para sumar
+
+        """    
         # Seleccionar tarjeta de sonido
         for idx, rect in device_rects.items():
             if rect.collidepoint(pos) and pygame.mouse.get_pressed()[0]:
@@ -121,10 +139,10 @@ def handle_input(pos):
                 new_blocksize = [64, 128, 256, 512][i]
                 success = Sound.update_audio_device(sd.default.device, new_blocksize)
                 if success:
-                    Pestania.settings = False  # Cerrar pestaña si funciona
+                    print(f"Nueva seleccion de buffer {new_blocksize}")
                 else:
                     print(f"Fallo al seleccionar blocksize {new_blocksize}")
-                break
+                break"""
     
 
     if MENU_BUTTON.collidepoint(pos):

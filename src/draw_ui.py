@@ -2,12 +2,14 @@ from turtle import st
 import pygame
 import os
 from config.variables import ver, TON_HEIGHT, TON_WIDTH, sd, Seq, Pestania, Sound, font, font_small, font_bold, screen, Color, Patt, Samples, DRAW_X, STEP_WIDTH, STEP_MARGIN, STEP_HEIGHT, CHANNEL_HEIGHT, VOL_HEIGHT, VOL_WIDTH, PAN_HEIGHT, PAN_WIDTH, PLAY_BUTTON, TEMPO_BOX, MASTER_VOL_BOX, SAVE_BUTTON, LOAD_BUTTON, MENU_BUTTON, PATTERN_BOX, PATTERN_TOTAL, BNK_BUTTON, SETTING_BOX, MENU_ITEMS, MENU_WIDTH, MENU_ITEM_HEIGHT
-from .handle import Botones
+from .handle import SC_BUFF1, SC_BUFF2, Botones, SC1, SC2
 
 largo = len(Samples.wav_files)
 device_rects = {}  # Rectángulos para dispositivos
 buffer_rects = {}  # Rectángulos para buffers
 STP_IDX_Y = 750
+
+
 
 def actualizar_colores_botones(local_pt):
         
@@ -288,35 +290,49 @@ def draw_ui():
 
         # Fondo de la pestaña
         pygame.draw.rect(screen, (50, 50, 50), (50, 50, 500, 35))
-        
         pygame.draw.rect(screen, (20, 20, 20), (50, 85, 500, 350))
+        
+        pygame.draw.rect(screen, (255, 0, 0), SC1)
+        pygame.draw.rect(screen, (255, 0, 0), SC2)
+        pygame.draw.rect(screen, (255, 0, 0), SC_BUFF1)
+        pygame.draw.rect(screen, (255, 0, 0), SC_BUFF2)
+
+        # Obtener los índices de los dispositivos predeterminados
+        input_device, output_device = sd.default.device
+
+        # Obtener información de los dispositivos por separado
+        input_info = sd.query_devices(input_device)
+        output_info = sd.query_devices(output_device)
 
         # Título
         title = font_bold.render("Audio Settings - Select Sound Card and Buffer", True, (255, 255, 255))
         screen.blit(title, (60, 60))
 
-        devices = [d for d in Sound.devices if d['max_output_channels'] > 0][:12]
-        current_device = sd.default.device[1] if isinstance(sd.default.device, (list, tuple)) else sd.default.device
-        print("Dispositivo en funcionamiento:", current_device)
-        for i, device in enumerate(devices):
-            idx = Sound.devices.index(device)
-            color = (0, 255, 0) if current_device == 19 else (155, 155, 155)
-            device_name = f"{idx}: {device['name']} ({device['max_output_channels']} out)"
-            text = font.render(device_name, True, color)
-            screen.blit(text, (60, 100 + i * 20))
-            device_rects[idx] = pygame.Rect(60, 100 + i * 20, 600, 20)
+        select_txt = font.render("Select output audio card: ", True, (255, 255, 255))
+        sum_txt = font_bold.render(">", True, (255, 255, 255))
+        rest_txt = font_bold.render("<", True, (255, 255, 255))
 
-        #print("Dispositivo en funcionamiento ", sd.default.device)
+        # Mostrar información del dispositivo de entrada y salida
+        #device_input = font.render(f"Input: {input_info['name']}", True, (255, 255, 255))
+        device_output = font.render(f"Output: {output_info['name']} | Sample Rate: {sd.default.samplerate}", True, (255, 255, 255))
+        device_buffer = font.render(f"Buffer: {Sound.blocksize}", True, (255, 255, 255))
 
-        # Opciones de blocksize (ajustar posición según la lista filtrada)
-        buffer_options = [64, 128, 256, 512]
-        buffer_title = font_bold.render("Buffer Size:", True, (255, 255, 255))
-        screen.blit(buffer_title, (60, 120 + len(devices) * 20 + 20))
-        for i, size in enumerate(buffer_options):
-            color = (0, 255, 0) if Sound.blocksize == size else (155, 155, 155)
-            text = font_bold.render(str(size), True, color)
-            screen.blit(text, (60 + i * 60, 120 + len(devices) * 20 + 40))
-            buffer_rects[i] = pygame.Rect(60 + i * 60, 100 + len(devices) * 20 + 40, 50, 20)
+        #screen.blit(device_input, (60, 120))
+        screen.blit(select_txt, (60, 130))
+        screen.blit(rest_txt, (SC1.x + 2, SC1.y + 2))
+        screen.blit(sum_txt, (SC2.x + 2, SC2.y + 2))
+        
+        screen.blit(rest_txt, (SC_BUFF1.x + 2, SC_BUFF1.y + 2))
+        screen.blit(sum_txt, (SC_BUFF2.x + 2, SC_BUFF2.y + 2))
+        screen.blit(device_output, (60, 150))
+        screen.blit(device_buffer, (60, SC_BUFF1.y - 20))
+        
+
+
+        
+
+        
+
 
     
     draw_settings()            
