@@ -1,40 +1,54 @@
 {
-    "id": "com.deenbee.BottleBeats",
+    "app-id": "com.deenbee.BottleBeats",
     "runtime": "org.freedesktop.Platform",
     "runtime-version": "23.08",
     "sdk": "org.freedesktop.Sdk",
-    "command": "python3 src/main.py",
+    "command": "bottlebeats",
+    "finish-args": [
+        "--socket=wayland",
+        "--socket=fallback-x11",
+        "--share=ipc",
+        "--device=dri"
+    ],
     "modules": [
         {
-            "name": "pygame",
+            "name": "python3",
             "buildsystem": "simple",
-            "build-commands": [],
+            "build-commands": [
+                "pip3 install pygame"
+            ],
             "sources": [
                 {
-                    "type": "python",
-                    "package": "pygame"
+                    "type": "archive",
+                    "url": "https://www.python.org/ftp/python/3.11.8/Python-3.11.8.tar.xz",
+                    "sha256": "d62c8270a5a10ed0ebfc4e5a4a5bf5b83d75db08"
                 }
             ]
         },
         {
             "name": "bottlebeats",
             "buildsystem": "simple",
-            "build-commands": [],
+            "build-commands": [
+                "install -Dm755 src/main.py /app/bin/bottlebeats"
+            ],
             "sources": [
                 {
                     "type": "dir",
-                    "path": "src"
+                    "path": "../src"
                 }
             ]
         },
         {
             "name": "assets",
             "buildsystem": "simple",
-            "build-commands": [],
+            "build-commands": [
+                "mkdir -p /app/share/bottlebeats/assets",
+                "cp -r assets/* /app/share/bottlebeats/assets/"
+            ],
             "sources": [
                 {
                     "type": "dir",
-                    "path": "assets"
+                    "path": "../assets"
                 }
             ]
         }
